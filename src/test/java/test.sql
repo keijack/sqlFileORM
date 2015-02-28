@@ -1,15 +1,15 @@
-select * from TEST
-	-- single line comments
+select ID, NAME, CREATETIME as CT from TEST
 	where 1 = 1
+	--#idEqual:
 	/**
 	 * multi line comments
 	 */
-	--#idEqual:
-	and id = ?
+	and ID = ?
 	--idEqual#
 	--#nameLike:
-	and name like ?
+	-- single line comments
+	and NAME like ?
 	--nameLike#
 	--#idIn@required:
-	and id in (?)
+	and ID in (?)
 	--idIn#

@@ -3,6 +3,7 @@ package com.keijack.orm.sqlfile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +39,8 @@ public class QueryTest {
 	    assertEquals(2, res.size());
 	    assertEquals(new Integer(1), res.get(0).getId());
 	    assertEquals("Hello", res.get(0).getName());
-	    System.out.println(res.get(0).getCreateTime());
+	    assertEquals("2015-02-28 11:05:40.10",
+		    new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S").format(res.get(0).getCreateTime()));
 	} catch (Throwable t) {
 	    t.printStackTrace();
 	    fail();

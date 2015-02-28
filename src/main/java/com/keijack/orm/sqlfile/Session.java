@@ -44,10 +44,11 @@ public class Session {
 		T obj = clazz.newInstance();
 		for (int i = 1; i <= row.getColumnCount(); i++) {
 		    String label = row.getColumnLabel(i);
+		    Object value = result.getObject(i);
+
 		    if (!lableSetMethodMap.containsKey(label)) {
 			continue;
 		    }
-		    Object value = result.getObject(i);
 
 		    Method method = lableSetMethodMap.get(label);
 		    method.invoke(obj, value);

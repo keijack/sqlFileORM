@@ -14,7 +14,7 @@ public class TestEntity {
     @Column(label = "NAME")
     private String name;
 
-    @Column(label = "CREATETIME")
+    @Column(label = "CT")
     private Date createTime;
 
     public Integer getId() {
