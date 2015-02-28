@@ -16,9 +16,15 @@ class StamentPreparer {
 
     private static final int READ_FILE_BUFF_SIZE = 512;
 
+    private String countSql;
+
     private String sql;
 
     private List<Object> params;
+
+    private void setCountSql(String countSql) {
+	this.countSql = countSql;
+    }
 
     private void setSql(String sql) {
 	this.sql = sql;
@@ -26,6 +32,10 @@ class StamentPreparer {
 
     private void setParams(List<Object> params) {
 	this.params = params;
+    }
+
+    public String getCountSql() {
+	return countSql;
     }
 
     public String getSql() {
@@ -92,12 +102,24 @@ class StamentPreparer {
 	    }
 	}
 
-	sql = sql.replaceAll("--[^\n]*", "")
+	Matcher matcher = Pattern.compile("--#(count\\([^\\n]*)").matcher(sql);
+	String countSelect;
+	if (matcher.find()) {
+	    countSelect = matcher.group(1);
+	} else {
+	    countSelect = "count(*)";
+	}
+
+	preparer.setCountSql(formatSql("select " + countSelect + " from (" + sql + " )"));
+	preparer.setSql(formatSql(sql));
+	preparer.setParams(params);
+    }
+
+    private static String formatSql(String sql) {
+	return sql.replaceAll("--[^\\n]*", "")
 		.replaceAll("\\/\\*(?:\\s|.)*?\\*\\/", "")
 		.replaceAll("\\s+", " ");
 
-	preparer.setSql(sql);
-	preparer.setParams(params);
     }
 
     private static List<String> getAllTags(String sqlTemplate) {

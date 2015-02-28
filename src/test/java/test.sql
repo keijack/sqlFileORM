@@ -1,3 +1,4 @@
+--#count(ID)
 select ID, NAME, CREATETIME as CT from TEST
 	where 1 = 1
 	--#idEqual:
