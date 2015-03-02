@@ -29,30 +29,18 @@ enum StamentPreparer {
 	List<String> requiredTags = getRequiredTags(sqlTemplate);
 	checkRequriedTags(requiredTags, model);
 
-	return prepare(sqlTemplate, model);
-    }
-
-    private SqlAndParams prepare(String sqlTemplate, Map<String, Object> model) {
-
 	List<Object> params = new ArrayList<>(model.size());
 
 	List<String> validRows = getValidRows(sqlTemplate, model);
-
 	validRows = replaceNormalTags(validRows, model, params);
-
 	validRows = replaceStringTags(validRows, model);
-
 	validRows = replaceOptionalStringTags(validRows, model);
-
 	String sql = join(validRows);
-
-	String countSql = getCountSql(sql);
 
 	SqlAndParams stamentPreparer = new SqlAndParams();
 	stamentPreparer.setSql(formatSql(sql));
+	stamentPreparer.setCountSql(formatSql(getCountSql(sql)));
 	stamentPreparer.setParams(params);
-
-	stamentPreparer.setCountSql(formatSql(countSql));
 
 	return stamentPreparer;
     }
@@ -139,9 +127,7 @@ enum StamentPreparer {
 
     private List<String> getValidRows(String sqlTemplate, Map<String, Object> model) {
 	List<String> rowsInSqlTemplate = getAllRows(sqlTemplate);
-
 	List<String> rows = new ArrayList<>(rowsInSqlTemplate.size());
-
 	for (String row : rowsInSqlTemplate) {
 	    List<String> noramlTagsInRow = getValideTags(row);
 	    if (model.keySet().containsAll(noramlTagsInRow)) {
