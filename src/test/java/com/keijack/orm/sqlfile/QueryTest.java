@@ -45,6 +45,7 @@ public class QueryTest {
 	idin.add(1);
 	idin.add(2);
 	params.put("idIn", idin);
+	params.put("orderbyid", true);
     }
 
     @Test

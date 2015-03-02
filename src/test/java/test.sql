@@ -1,16 +1,6 @@
 --#count(ID)
 select ID, NAME, CREATETIME as CT from TEST
 	where 1 = 1
-	--#idEqual:
-	/**
-	 * multi line comments
-	 */
-	and ID = ?
-	--idEqual#
-	--#nameLike:
-	-- single line comments
-	and NAME like ?
-	--nameLike#
-	--#idIn@required:
-	and ID in (?)
-	--idIn#
+	and ID = :idEquals	and NAME like :nameLike
+	and ID in (:idIn@required) 
+	order by ID :idOrder@optionalString -- :orderbyid@string
