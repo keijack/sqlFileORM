@@ -17,37 +17,19 @@ class StamentPreparer {
 
     private static final int READ_FILE_BUFF_SIZE = 512;
 
-    private String countSql;
-
-    private String sql;
-
-    private List<Object> params;
-
-    private void setCountSql(String countSql) {
-	this.countSql = countSql;
+    private static class SingletonHolder {
+	private static StamentPreparer instance = new StamentPreparer();
     }
 
-    private void setSql(String sql) {
-	this.sql = sql;
+    public static StamentPreparer getInstance() {
+	return SingletonHolder.instance;
     }
 
-    private void setParams(List<Object> params) {
-	this.params = params;
+    private StamentPreparer() {
+	super();
     }
 
-    public String getCountSql() {
-	return countSql;
-    }
-
-    public String getSql() {
-	return sql;
-    }
-
-    public List<Object> getParams() {
-	return params;
-    }
-
-    public static <T> StamentPreparer prepare(Class<T> clazz, Map<String, Object> model) throws IOException {
+    public <T> SqlAndParams prepare(Class<T> clazz, Map<String, Object> model) throws IOException {
 	Entity ano = clazz.getAnnotation(Entity.class);
 	if (ano == null) {
 	    throw new IllegalArgumentException(clazz.getName() + " is not mapped.");
@@ -61,7 +43,7 @@ class StamentPreparer {
 	return prepare(sqlTemplate, model);
     }
 
-    private static StamentPreparer prepare(String sqlTemplate, Map<String, Object> model) {
+    private SqlAndParams prepare(String sqlTemplate, Map<String, Object> model) {
 
 	List<Object> params = new ArrayList<>(model.size());
 
@@ -77,7 +59,7 @@ class StamentPreparer {
 
 	String countSql = getCountSql(sql);
 
-	StamentPreparer stamentPreparer = new StamentPreparer();
+	SqlAndParams stamentPreparer = new SqlAndParams();
 	stamentPreparer.setSql(formatSql(sql));
 	stamentPreparer.setParams(params);
 
@@ -86,7 +68,7 @@ class StamentPreparer {
 	return stamentPreparer;
     }
 
-    private static String getCountSql(String sql) {
+    private String getCountSql(String sql) {
 	Matcher matcher = Pattern.compile("--#(count\\([^\\n]*)").matcher(sql);
 	String countSelect;
 	if (matcher.find()) {
@@ -98,7 +80,7 @@ class StamentPreparer {
 	return "select " + countSelect + " from (\n" + sql + "\n)";
     }
 
-    private static String join(List<String> validRows) {
+    private String join(List<String> validRows) {
 	String sql = "";
 	for (String row : validRows) {
 	    sql += row + "\n";
@@ -106,7 +88,7 @@ class StamentPreparer {
 	return sql;
     }
 
-    private static List<String> replaceOptionalStringTags(List<String> validRows, Map<String, Object> model) {
+    private List<String> replaceOptionalStringTags(List<String> validRows, Map<String, Object> model) {
 	List<String> rows = new ArrayList<>();
 	for (String row : validRows) {
 	    List<String> stringTags = getOptionalStringTags(row);
@@ -122,7 +104,7 @@ class StamentPreparer {
 	return rows;
     }
 
-    private static List<String> replaceStringTags(List<String> validRows, Map<String, Object> model) {
+    private List<String> replaceStringTags(List<String> validRows, Map<String, Object> model) {
 	List<String> rows = new ArrayList<>();
 	for (String row : validRows) {
 	    List<String> stringTags = getStringTags(row);
@@ -134,7 +116,7 @@ class StamentPreparer {
 	return rows;
     }
 
-    private static List<String> replaceNormalTags(List<String> validRows, Map<String, Object> model, List<Object> params) {
+    private List<String> replaceNormalTags(List<String> validRows, Map<String, Object> model, List<Object> params) {
 	List<String> rows = new ArrayList<>();
 	for (String row : validRows) {
 	    List<String> normalTags = getNormalTags(row);
@@ -143,7 +125,7 @@ class StamentPreparer {
 	return rows;
     }
 
-    private static String replaceNormalTags(String row, List<String> normalTags, Map<String, Object> model,
+    private String replaceNormalTags(String row, List<String> normalTags, Map<String, Object> model,
 	    List<Object> params) {
 	for (String tag : normalTags) {
 	    Object val = model.get(tag);
@@ -166,7 +148,7 @@ class StamentPreparer {
 	return row;
     }
 
-    private static List<String> getValidRows(String sqlTemplate, Map<String, Object> model) {
+    private List<String> getValidRows(String sqlTemplate, Map<String, Object> model) {
 	List<String> rowsInSqlTemplate = getAllRows(sqlTemplate);
 
 	List<String> rows = new ArrayList<>(rowsInSqlTemplate.size());
@@ -180,18 +162,18 @@ class StamentPreparer {
 	return rows;
     }
 
-    private static List<String> getAllRows(String sqlTemplate) {
+    private List<String> getAllRows(String sqlTemplate) {
 	return Arrays.asList(sqlTemplate.split("\\n"));
     }
 
-    private static String formatSql(String sql) {
+    private String formatSql(String sql) {
 	return sql.replaceAll("--[^\\n]*", "")
 		.replaceAll("\\/\\*(?:\\s|.)*?\\*\\/", "")
 		.replaceAll("\\s+", " ");
 
     }
 
-    private static List<String> getValideTags(String sqlFragment) {
+    private List<String> getValideTags(String sqlFragment) {
 	List<String> normalTags = getNormalTags(sqlFragment);
 	List<String> stringTags = getStringTags(sqlFragment);
 	List<String> valideTags = new ArrayList<>(normalTags.size() + stringTags.size());
@@ -200,7 +182,7 @@ class StamentPreparer {
 	return valideTags;
     }
 
-    private static List<String> getNormalTags(String sqlFragment) {
+    private List<String> getNormalTags(String sqlFragment) {
 	List<String> tags = new ArrayList<>();
 	Matcher matcher = Pattern.compile(":(\\w*)(?:@required)?(@*)").matcher(sqlFragment);
 	while (matcher.find()) {
@@ -211,7 +193,7 @@ class StamentPreparer {
 	return tags;
     }
 
-    private static List<String> getStringTags(String sqlFragment) {
+    private List<String> getStringTags(String sqlFragment) {
 	List<String> tags = new ArrayList<>();
 	Matcher matcher = Pattern.compile(":(\\w*)@string").matcher(sqlFragment);
 	while (matcher.find()) {
@@ -220,7 +202,7 @@ class StamentPreparer {
 	return tags;
     }
 
-    private static List<String> getRequiredTags(String sqlFragment) {
+    private List<String> getRequiredTags(String sqlFragment) {
 	List<String> tags = new ArrayList<>();
 	Matcher matcher = Pattern.compile(":(\\w*)@required").matcher(sqlFragment);
 	while (matcher.find()) {
@@ -229,7 +211,7 @@ class StamentPreparer {
 	return tags;
     }
 
-    private static List<String> getOptionalStringTags(String sqlFragment) {
+    private List<String> getOptionalStringTags(String sqlFragment) {
 	List<String> tags = new ArrayList<>();
 	Matcher matcher = Pattern.compile(":(\\w*)@optionalString").matcher(sqlFragment);
 	while (matcher.find()) {
@@ -238,7 +220,7 @@ class StamentPreparer {
 	return tags;
     }
 
-    private static void checkRequriedTags(List<String> requiredTags, Map<String, Object> model) {
+    private void checkRequriedTags(List<String> requiredTags, Map<String, Object> model) {
 	List<String> missingTags = new ArrayList<>();
 	for (String tag : requiredTags) {
 	    if (!model.containsKey(tag) || model.get(tag) == null) {
@@ -250,7 +232,7 @@ class StamentPreparer {
 	}
     }
 
-    private static String getSqlTemplate(String path) throws IOException {
+    private String getSqlTemplate(String path) throws IOException {
 	try (FileReader in = new FileReader(path);
 		StringWriter out = new StringWriter()) {
 	    char[] cbuf = new char[READ_FILE_BUFF_SIZE];
