@@ -48,7 +48,7 @@ public class Session {
      */
     public <T> long count(Class<T> clazz, Map<String, Object> params) {
 	try (Connection con = dataSource.getConnection()) {
-	    SqlAndParams sqlAndParams = StamentPreparer.getInstance().prepare(clazz, params);
+	    SqlAndParams sqlAndParams = StamentPreparer.INSTANCE.prepare(clazz, params);
 
 	    PreparedStatement statement = con.prepareStatement(sqlAndParams.getCountSql(),
 		    ResultSet.TYPE_SCROLL_INSENSITIVE,
@@ -83,7 +83,7 @@ public class Session {
     public <T> List<T> query(Class<T> clazz, Map<String, Object> params, int firstResult, int maxResults) {
 	try (Connection con = dataSource.getConnection()) {
 	    List<T> res = new ArrayList<>();
-	    SqlAndParams sqlAndParams = StamentPreparer.getInstance().prepare(clazz, params);
+	    SqlAndParams sqlAndParams = StamentPreparer.INSTANCE.prepare(clazz, params);
 
 	    PreparedStatement statement = con.prepareStatement(sqlAndParams.getSql(),
 		    ResultSet.TYPE_SCROLL_INSENSITIVE,

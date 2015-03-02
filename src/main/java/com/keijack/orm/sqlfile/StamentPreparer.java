@@ -13,21 +13,10 @@ import java.util.regex.Pattern;
 
 import com.keijack.orm.sqlfile.annotations.Entity;
 
-class StamentPreparer {
+enum StamentPreparer {
+    INSTANCE;
 
     private static final int READ_FILE_BUFF_SIZE = 512;
-
-    private static class SingletonHolder {
-	private static StamentPreparer instance = new StamentPreparer();
-    }
-
-    public static StamentPreparer getInstance() {
-	return SingletonHolder.instance;
-    }
-
-    private StamentPreparer() {
-	super();
-    }
 
     public <T> SqlAndParams prepare(Class<T> clazz, Map<String, Object> model) throws IOException {
 	Entity ano = clazz.getAnnotation(Entity.class);
