@@ -31,7 +31,7 @@ public class Session {
      * @param clazz
      *            需要查询的类，该类必须使用@Entity标注
      * @param params
-     *            查询条件，map的key必须对应sql文件中的 --#[标签]:
+     *            查询条件，map的key必须对应sql文件中的 :[标签]
      * @return
      */
     public <T> List<T> query(Class<T> clazz, Map<String, Object> params) {
@@ -43,7 +43,7 @@ public class Session {
      * @param clazz
      *            需要查询的类，该类必须使用@Entity标注
      * @param params
-     *            查询条件，map的key必须对应sql文件中的 --#[标签]:
+     *            查询条件，map的key必须对应sql文件中的 :[标签]
      * @return
      */
     public <T> long count(Class<T> clazz, Map<String, Object> params) {
@@ -73,7 +73,7 @@ public class Session {
      * @param clazz
      *            需要查询的类，该类必须使用@Entity标注
      * @param params
-     *            查询条件，map的key必须对应sql文件中的 --#[标签]:
+     *            查询条件，map的key必须对应sql文件中的 :[标签]
      * @param firstResult
      *            查询的第一行
      * @param maxResults
