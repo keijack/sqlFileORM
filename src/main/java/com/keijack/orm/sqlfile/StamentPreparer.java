@@ -1,7 +1,10 @@
 package com.keijack.orm.sqlfile;
 
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,23 +22,18 @@ enum StamentPreparer {
     private static final int READ_FILE_BUFF_SIZE = 512;
 
     public <T> SqlAndParams prepare(Class<T> clazz, Map<String, Object> model) throws IOException {
-	Entity ano = clazz.getAnnotation(Entity.class);
-	if (ano == null) {
-	    throw new IllegalArgumentException(clazz.getName() + " is not mapped.");
-	}
-	String path = StamentPreparer.class.getClassLoader().getResource("").getPath() + "/" + ano.path();
-	String sqlTemplate = getSqlTemplate(path);
+
+	String sqlTemplate = getSqlTemplate(clazz);
 
 	List<String> requiredTags = getRequiredTags(sqlTemplate);
 	checkRequriedTags(requiredTags, model);
 
-	List<Object> params = new ArrayList<>(model.size());
-
 	List<String> validRows = getValidRows(sqlTemplate, model);
-	validRows = replaceNormalTags(validRows, model, params);
-	validRows = replaceStringTags(validRows, model);
-	validRows = replaceOptionalStringTags(validRows, model);
-	String sql = join(validRows);
+
+	List<Object> params = new ArrayList<>(model.size());
+	List<String> rows = replaceAllTags(validRows, model, params);
+
+	String sql = join(rows);
 
 	SqlAndParams stamentPreparer = new SqlAndParams();
 	stamentPreparer.setSql(formatSql(sql));
@@ -43,6 +41,13 @@ enum StamentPreparer {
 	stamentPreparer.setParams(params);
 
 	return stamentPreparer;
+    }
+
+    private String formatSql(String sql) {
+	return sql.replaceAll("--[^\\n]*", "")
+		.replaceAll("\\/\\*(?:\\s|.)*?\\*\\/", "")
+		.replaceAll("\\s+", " ");
+
     }
 
     private String getCountSql(String sql) {
@@ -65,45 +70,40 @@ enum StamentPreparer {
 	return sql;
     }
 
-    private List<String> replaceOptionalStringTags(List<String> validRows, Map<String, Object> model) {
-	List<String> rows = new ArrayList<>();
+    private List<String> replaceAllTags(List<String> validRows, Map<String, Object> model, List<Object> params) {
+	List<String> rows = new ArrayList<>(validRows.size());
 	for (String row : validRows) {
-	    List<String> stringTags = getOptionalStringTags(row);
-	    for (String tag : stringTags) {
-		if (model.containsKey(tag)) {
-		    row = row.replaceFirst(":" + tag + "@optionalString", model.get(tag).toString());
-		} else {
-		    row = row.replaceFirst(":" + tag + "@optionalString", "");
-		}
-	    }
+	    row = replaceNormalTags(row, model, params);
+	    row = replaceStringTags(row, model);
+	    row = replaceOptionalStrinTags(row, model);
 	    rows.add(row);
 	}
 	return rows;
     }
 
-    private List<String> replaceStringTags(List<String> validRows, Map<String, Object> model) {
-	List<String> rows = new ArrayList<>();
-	for (String row : validRows) {
-	    List<String> stringTags = getStringTags(row);
-	    for (String tag : stringTags) {
-		row = row.replaceFirst(":" + tag + "@string", model.get(tag).toString());
+    private String replaceOptionalStrinTags(String row, Map<String, Object> model) {
+	List<String> stringTags = getOptionalStringTags(row);
+	for (String tag : stringTags) {
+	    if (model.containsKey(tag)) {
+		row = row.replaceFirst(":" + tag + "@optionalString", model.get(tag).toString());
+	    } else {
+		row = row.replaceFirst(":" + tag + "@optionalString", "");
 	    }
-	    rows.add(row);
 	}
-	return rows;
+	return row;
     }
 
-    private List<String> replaceNormalTags(List<String> validRows, Map<String, Object> model, List<Object> params) {
-	List<String> rows = new ArrayList<>();
-	for (String row : validRows) {
-	    List<String> normalTags = getNormalTags(row);
-	    rows.add(replaceNormalTags(row, normalTags, model, params));
+    private String replaceStringTags(String row, Map<String, Object> model) {
+	List<String> stringTags = getStringTags(row);
+	for (String tag : stringTags) {
+	    row = row.replaceFirst(":" + tag + "@string", model.get(tag).toString());
 	}
-	return rows;
+	return row;
     }
 
-    private String replaceNormalTags(String row, List<String> normalTags, Map<String, Object> model,
+    private String replaceNormalTags(String row, Map<String, Object> model,
 	    List<Object> params) {
+	List<String> normalTags = getNormalTags(row);
 	for (String tag : normalTags) {
 	    Object val = model.get(tag);
 	    if (val instanceof Collection) {
@@ -139,13 +139,6 @@ enum StamentPreparer {
 
     private List<String> getAllRows(String sqlTemplate) {
 	return Arrays.asList(sqlTemplate.split("\\n"));
-    }
-
-    private String formatSql(String sql) {
-	return sql.replaceAll("--[^\\n]*", "")
-		.replaceAll("\\/\\*(?:\\s|.)*?\\*\\/", "")
-		.replaceAll("\\s+", " ");
-
     }
 
     private List<String> getValideTags(String sqlFragment) {
@@ -207,14 +200,31 @@ enum StamentPreparer {
 	}
     }
 
-    private String getSqlTemplate(String path) throws IOException {
-	try (FileReader in = new FileReader(path);
+    private String getSqlTemplate(Class<?> clazz) throws IOException {
+	try (InputStreamReader in = new InputStreamReader(getSqlFileInputStream(clazz));
 		StringWriter out = new StringWriter()) {
 	    char[] cbuf = new char[READ_FILE_BUFF_SIZE];
 	    while (in.read(cbuf) != -1) {
 		out.write(cbuf);
 	    }
 	    return out.toString();
+	}
+    }
+
+    private InputStream getSqlFileInputStream(Class<?> clazz) throws FileNotFoundException {
+	Entity ano = clazz.getAnnotation(Entity.class);
+	if (ano == null) {
+	    throw new MappingException(clazz.getName() + " is not mapped.");
+	}
+	switch (ano.root()) {
+	case ABSOLUTE:
+	    return new FileInputStream(ano.path());
+	case CLASSPATH:
+	    return clazz.getClassLoader().getResourceAsStream(ano.path());
+	case ENTITY_PATH:
+	    return clazz.getResourceAsStream(ano.path());
+	default:
+	    throw new MappingException("Cannot find root folder.");
 	}
     }
 }

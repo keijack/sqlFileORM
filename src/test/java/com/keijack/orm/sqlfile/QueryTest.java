@@ -13,6 +13,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.keijack.orm.sqlfile.entity.TestEntity;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 public class QueryTest {

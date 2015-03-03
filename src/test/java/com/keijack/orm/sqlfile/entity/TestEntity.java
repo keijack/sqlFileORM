@@ -1,4 +1,4 @@
-package com.keijack.orm.sqlfile;
+package com.keijack.orm.sqlfile.entity;
 
 import java.util.Date;
 

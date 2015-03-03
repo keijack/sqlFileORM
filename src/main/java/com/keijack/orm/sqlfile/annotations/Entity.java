@@ -8,5 +8,18 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Entity {
+    /**
+     * Where's the root folder.
+     * 
+     * @return
+     */
+    RootFolder root() default RootFolder.ENTITY_PATH;
+
+    /**
+     * path
+     * 
+     * @return
+     */
     String path();
+
 }

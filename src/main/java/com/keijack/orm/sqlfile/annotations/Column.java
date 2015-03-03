@@ -8,5 +8,10 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Column {
+    /**
+     * Label, using field's name when empty
+     * 
+     * @return
+     */
     String label() default "";
 }
