@@ -21,7 +21,7 @@ enum StamentPreparer {
 
     private static final int READ_FILE_BUFF_SIZE = 512;
 
-    public <T> SqlAndParams prepare(Class<T> clazz, Map<String, Object> model) throws IOException {
+    public SqlAndParams prepare(Class<?> clazz, Map<String, Object> model) throws IOException {
 
 	String sqlTemplate = getSqlTemplate(clazz);
 
