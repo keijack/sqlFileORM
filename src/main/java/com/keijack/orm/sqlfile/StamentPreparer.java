@@ -72,7 +72,7 @@ enum StamentPreparer {
 	    countSelect = "count(*)";
 	}
 
-	return "select " + countSelect + " from (\n" + sql + "\n)";
+	return "select " + countSelect + " from (\n" + sql + "\n) RESULT";
     }
 
     private String join(List<String> validRows) {
