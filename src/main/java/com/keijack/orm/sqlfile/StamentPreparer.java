@@ -9,6 +9,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -21,9 +22,10 @@ enum StamentPreparer {
 
     private static final int READ_FILE_BUFF_SIZE = 512;
 
-    public SqlAndParams prepare(Class<?> clazz, Map<String, Object> model) throws IOException {
+    public SqlAndParams prepare(Class<?> clazz, Map<String, Object> parameters) throws IOException {
 
 	String sqlTemplate = getSqlTemplate(clazz);
+	Map<String, Object> model = ignoreNullValue(parameters);
 
 	List<String> requiredTags = getRequiredTags(sqlTemplate);
 	checkRequriedTags(requiredTags, model);
@@ -41,6 +43,17 @@ enum StamentPreparer {
 	stamentPreparer.setParams(params);
 
 	return stamentPreparer;
+    }
+
+    private Map<String, Object> ignoreNullValue(Map<String, Object> parameters) {
+	Map<String, Object> model = new HashMap<>(parameters.size());
+	for (String key : parameters.keySet()) {
+	    Object val = parameters.get(key);
+	    if (val != null) {
+		model.put(key, val);
+	    }
+	}
+	return model;
     }
 
     private String formatSql(String sql) {
