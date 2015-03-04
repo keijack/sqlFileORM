@@ -59,7 +59,7 @@ enum StamentPreparer {
     private String formatSql(String sql) {
 	return sql.replaceAll("--[^\\n]*", "")
 		.replaceAll("\\/\\*(?:\\s|.)*?\\*\\/", "")
-		.replaceAll("\\s+", " ");
+		.replaceAll("\\s+", " ").trim();
 
     }
 
