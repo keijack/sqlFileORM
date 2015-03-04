@@ -217,8 +217,9 @@ enum StamentPreparer {
 	try (InputStreamReader in = new InputStreamReader(getSqlFileInputStream(clazz));
 		StringWriter out = new StringWriter()) {
 	    char[] cbuf = new char[READ_FILE_BUFF_SIZE];
-	    while (in.read(cbuf) != -1) {
-		out.write(cbuf);
+	    int len;
+	    while ((len = in.read(cbuf)) != -1) {
+		out.write(cbuf, 0, len);
 	    }
 	    return out.toString();
 	}
