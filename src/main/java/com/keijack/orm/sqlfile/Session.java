@@ -104,13 +104,10 @@ public class Session {
 		for (int i = 1; i <= row.getColumnCount(); i++) {
 		    String label = row.getColumnLabel(i);
 		    Object value = result.getObject(i);
-
-		    if (!lableSetMethodMap.containsKey(label)) {
-			continue;
+		    if (lableSetMethodMap.containsKey(label) && value != null) {
+			Method method = lableSetMethodMap.get(label);
+			method.invoke(obj, value);
 		    }
-
-		    Method method = lableSetMethodMap.get(label);
-		    method.invoke(obj, value);
 		}
 		res.add(obj);
 	    }
