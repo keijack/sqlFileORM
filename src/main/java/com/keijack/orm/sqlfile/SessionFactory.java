@@ -2,25 +2,35 @@ package com.keijack.orm.sqlfile;
 
 import javax.sql.DataSource;
 
+import com.keijack.orm.sqlfile.template.DefaultSqlAndParamsPreparer;
+
+/**
+ * Session factory
+ * 
+ * @author keijack.wu
+ *
+ */
 public class SessionFactory {
 
     private DataSource dataSource;
 
-    private Session session;
+    private SqlAndParamsPreparer sqlAndParamsPreparer = new DefaultSqlAndParamsPreparer();
 
-    public DataSource getDataSource() {
-	return dataSource;
-    }
+    private Session session;
 
     public void setDataSource(DataSource dataSource) {
 	this.dataSource = dataSource;
+    }
+
+    public void setSqlAndParamsPreparer(SqlAndParamsPreparer sqlAndParamsPreparer) {
+	this.sqlAndParamsPreparer = sqlAndParamsPreparer;
     }
 
     public Session getCurrentSession() {
 	if (session == null) {
 	    synchronized (this) {
 		if (session == null) {
-		    session = new Session(dataSource);
+		    session = new Session(dataSource, sqlAndParamsPreparer);
 		}
 	    }
 	}

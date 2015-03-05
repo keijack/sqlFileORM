@@ -1,6 +1,5 @@
 package com.keijack.orm.sqlfile;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -18,12 +17,21 @@ import javax.sql.DataSource;
 
 import com.keijack.orm.sqlfile.annotations.Column;
 
-public class Session {
+/**
+ * 一个查询操作的会话，由于暂时只用在查询方面，所以未实现复杂的 transaction 机制。
+ * 
+ * @author keijack.wu
+ *
+ */
+public final class Session {
 
     private final DataSource dataSource;
 
-    public Session(DataSource dataSource) {
+    private final SqlAndParamsPreparer sqlAndParamsPreparer;
+
+    protected Session(DataSource dataSource, SqlAndParamsPreparer sqlAndParamsPreparer) {
 	this.dataSource = dataSource;
+	this.sqlAndParamsPreparer = sqlAndParamsPreparer;
     }
 
     /**
@@ -48,7 +56,7 @@ public class Session {
      */
     public <T> long count(Class<T> clazz, Map<String, Object> params) {
 	try (Connection con = dataSource.getConnection()) {
-	    SqlAndParams sqlAndParams = StamentPreparer.INSTANCE.prepare(clazz, params);
+	    SqlAndParams sqlAndParams = sqlAndParamsPreparer.prepare(clazz, params);
 
 	    PreparedStatement statement = con.prepareStatement(sqlAndParams.getCountSql(),
 		    ResultSet.TYPE_SCROLL_INSENSITIVE,
@@ -63,7 +71,7 @@ public class Session {
 
 	    result.first();
 	    return result.getLong(1);
-	} catch (SQLException | IOException e) {
+	} catch (SQLException e) {
 	    throw new QueryException(e);
 	}
     }
@@ -83,7 +91,7 @@ public class Session {
     public <T> List<T> query(Class<T> clazz, Map<String, Object> params, int firstResult, int maxResults) {
 	try (Connection con = dataSource.getConnection()) {
 	    List<T> res = new ArrayList<>();
-	    SqlAndParams sqlAndParams = StamentPreparer.INSTANCE.prepare(clazz, params);
+	    SqlAndParams sqlAndParams = sqlAndParamsPreparer.prepare(clazz, params);
 
 	    PreparedStatement statement = con.prepareStatement(sqlAndParams.getSql(),
 		    ResultSet.TYPE_SCROLL_INSENSITIVE,
@@ -117,7 +125,7 @@ public class Session {
 		| IllegalArgumentException
 		| InvocationTargetException e) {
 	    throw new MappingException(e);
-	} catch (SQLException | IOException e) {
+	} catch (SQLException e) {
 	    throw new QueryException(e);
 	}
 

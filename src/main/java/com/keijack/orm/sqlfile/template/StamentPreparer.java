@@ -1,4 +1,4 @@
-package com.keijack.orm.sqlfile;
+package com.keijack.orm.sqlfile.template;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -10,11 +10,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.keijack.orm.sqlfile.MappingException;
+import com.keijack.orm.sqlfile.SqlAndParams;
 import com.keijack.orm.sqlfile.annotations.Entity;
 
 enum StamentPreparer {
@@ -27,10 +30,9 @@ enum StamentPreparer {
 	String sqlTemplate = getSqlTemplate(clazz);
 	Map<String, Object> model = ignoreNullValue(parameters);
 
-	List<String> requiredTags = getRequiredTags(sqlTemplate);
-	checkRequriedTags(requiredTags, model);
+	checkRequriedTags(sqlTemplate, model);
 
-	List<String> validRows = getValidRows(sqlTemplate, model);
+	Map<String, List<Tag>> validRows = getValidRows(sqlTemplate, model);
 
 	List<Object> params = new ArrayList<>(model.size());
 	List<String> rows = replaceAllTags(validRows, model, params);
@@ -83,68 +85,62 @@ enum StamentPreparer {
 	return sql;
     }
 
-    private List<String> replaceAllTags(List<String> validRows, Map<String, Object> model, List<Object> params) {
+    private List<String> replaceAllTags(Map<String, List<Tag>> validRows, Map<String, Object> model, List<Object> params) {
 	List<String> rows = new ArrayList<>(validRows.size());
-	for (String row : validRows) {
-	    row = replaceNormalTags(row, model, params);
-	    row = replaceStringTags(row, model);
-	    row = replaceOptionalStrinTags(row, model);
-	    rows.add(row);
+	for (String row : validRows.keySet()) {
+	    rows.add(replaceTags(row, validRows.get(row), model, params));
 	}
 	return rows;
     }
 
-    private String replaceOptionalStrinTags(String row, Map<String, Object> model) {
-	List<String> stringTags = getOptionalStringTags(row);
-	for (String tag : stringTags) {
-	    if (model.containsKey(tag)) {
-		row = row.replaceFirst(":" + tag + "@optionalString", model.get(tag).toString());
+    private String replaceTags(String row, List<Tag> tags, Map<String, Object> model, List<Object> params) {
+	String r = row;
+	for (Tag tag : tags) {
+	    if (TagType.FRAGMENT.equals(tag.getType())) {
+		r = replaceSqlTag(model, r, tag);
 	    } else {
-		row = row.replaceFirst(":" + tag + "@optionalString", "");
+		r = replaceObjectTag(r, tag, model, params);
 	    }
 	}
-	return row;
+	return r;
     }
 
-    private String replaceStringTags(String row, Map<String, Object> model) {
-	List<String> stringTags = getStringTags(row);
-	for (String tag : stringTags) {
-	    row = row.replaceFirst(":" + tag + "@string", model.get(tag).toString());
-	}
-	return row;
+    private String replaceSqlTag(Map<String, Object> model, String r, Tag tag) {
+	Object obj = model.get(tag.getName());
+	String sql = obj == null ? "" : obj.toString();
+	return r.replace(tag.getTagString(), sql);
     }
 
-    private String replaceNormalTags(String row, Map<String, Object> model,
+    private String replaceObjectTag(String r, Tag tag, Map<String, Object> model,
 	    List<Object> params) {
-	List<String> normalTags = getNormalTags(row);
-	for (String tag : normalTags) {
-	    Object val = model.get(tag);
-	    if (val instanceof Collection) {
-		String replacement = "";
-		Collection<?> col = (Collection<?>) val;
-		for (int i = 0; i < col.size(); i++) {
-		    if (!replacement.isEmpty()) {
-			replacement += ",";
-		    }
-		    replacement += "?";
+	String row = r;
+	Object val = model.get(tag.getName());
+	if (val instanceof Collection) {
+	    String replacement = "";
+	    Collection<?> col = (Collection<?>) val;
+	    for (int i = 0; i < col.size(); i++) {
+		if (!replacement.isEmpty()) {
+		    replacement += ",";
 		}
-		row = row.replaceFirst(":" + tag + "(?:@required)?", replacement);
-		params.addAll(col);
-	    } else {
-		row = row.replaceFirst(":" + tag + "(?:@required)?", "?");
-		params.add(val);
+		replacement += "?";
 	    }
+	    row = row.replace(tag.getTagString(), replacement);
+	    params.addAll(col);
+	} else {
+	    row = row.replace(tag.getTagString(), "?");
+	    params.add(val);
 	}
 	return row;
     }
 
-    private List<String> getValidRows(String sqlTemplate, Map<String, Object> model) {
+    private Map<String, List<Tag>> getValidRows(String sqlTemplate, Map<String, Object> model) {
 	List<String> rowsInSqlTemplate = getAllRows(sqlTemplate);
-	List<String> rows = new ArrayList<>(rowsInSqlTemplate.size());
+	Map<String, List<Tag>> rows = new LinkedHashMap<>(rowsInSqlTemplate.size());
 	for (String row : rowsInSqlTemplate) {
-	    List<String> noramlTagsInRow = getValideTags(row);
+	    List<Tag> allTags = getTags(row);
+	    List<String> noramlTagsInRow = getValideTags(row, allTags);
 	    if (model.keySet().containsAll(noramlTagsInRow)) {
-		rows.add(row);
+		rows.put(row, allTags);
 	    }
 	}
 	return rows;
@@ -154,54 +150,28 @@ enum StamentPreparer {
 	return Arrays.asList(sqlTemplate.split("\\n"));
     }
 
-    private List<String> getValideTags(String sqlFragment) {
-	List<String> normalTags = getNormalTags(sqlFragment);
-	List<String> stringTags = getStringTags(sqlFragment);
-	List<String> valideTags = new ArrayList<>(normalTags.size() + stringTags.size());
-	valideTags.addAll(normalTags);
-	valideTags.addAll(stringTags);
+    private List<String> getValideTags(String sqlFragment, Collection<Tag> tags) {
+	List<String> valideTags = new ArrayList<>();
+	for (Tag tag : tags) {
+	    if (!ModifierType.OPTIONAL.equals(tag.getModifier())) {
+		valideTags.add(tag.getName());
+	    }
+	}
 	return valideTags;
     }
 
-    private List<String> getNormalTags(String sqlFragment) {
-	List<String> tags = new ArrayList<>();
-	Matcher matcher = Pattern.compile(":(\\w*)(?:@required)?(@*)").matcher(sqlFragment);
+    private List<Tag> getTags(String sqlFragment) {
+	List<Tag> tags = new ArrayList<>();
+	Matcher matcher = Pattern.compile(":\\w*(?:@\\w*)?(?:\\[\\w*\\])?").matcher(sqlFragment);
 	while (matcher.find()) {
-	    if (matcher.group(2).isEmpty()) {
-		tags.add(matcher.group(1));
-	    }
+	    Tag tag = new Tag(matcher.group());
+	    tags.add(tag);
 	}
 	return tags;
     }
 
-    private List<String> getStringTags(String sqlFragment) {
-	List<String> tags = new ArrayList<>();
-	Matcher matcher = Pattern.compile(":(\\w*)@string").matcher(sqlFragment);
-	while (matcher.find()) {
-	    tags.add(matcher.group(1));
-	}
-	return tags;
-    }
-
-    private List<String> getRequiredTags(String sqlFragment) {
-	List<String> tags = new ArrayList<>();
-	Matcher matcher = Pattern.compile(":(\\w*)@required").matcher(sqlFragment);
-	while (matcher.find()) {
-	    tags.add(matcher.group(1));
-	}
-	return tags;
-    }
-
-    private List<String> getOptionalStringTags(String sqlFragment) {
-	List<String> tags = new ArrayList<>();
-	Matcher matcher = Pattern.compile(":(\\w*)@optionalString").matcher(sqlFragment);
-	while (matcher.find()) {
-	    tags.add(matcher.group(1));
-	}
-	return tags;
-    }
-
-    private void checkRequriedTags(List<String> requiredTags, Map<String, Object> model) {
+    private void checkRequriedTags(String sqlFragment, Map<String, Object> model) {
+	List<String> requiredTags = getRequiredTags(sqlFragment);
 	List<String> missingTags = new ArrayList<>();
 	for (String tag : requiredTags) {
 	    if (!model.containsKey(tag) || model.get(tag) == null) {
@@ -211,6 +181,15 @@ enum StamentPreparer {
 	if (!missingTags.isEmpty()) {
 	    throw new IllegalArgumentException("The following query conditions is requried: " + missingTags);
 	}
+    }
+
+    private List<String> getRequiredTags(String sqlFragment) {
+	List<String> tags = new ArrayList<>();
+	Matcher matcher = Pattern.compile(":(\\w*)(?:@\\w*)?\\[required\\]").matcher(sqlFragment);
+	while (matcher.find()) {
+	    tags.add(matcher.group(1));
+	}
+	return tags;
     }
 
     private String getSqlTemplate(Class<?> clazz) throws IOException {

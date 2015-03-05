@@ -6,7 +6,7 @@ import java.util.List;
  * @author Keijack
  *
  */
-class SqlAndParams {
+public class SqlAndParams {
 
     private String countSql;
 
