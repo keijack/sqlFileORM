@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.keijack.orm.sqlfile.MappingException;
 import com.keijack.orm.sqlfile.SqlAndParams;
 import com.keijack.orm.sqlfile.annotations.Entity;
 
@@ -207,7 +206,7 @@ enum StamentPreparer {
     private InputStream getSqlFileInputStream(Class<?> clazz) throws FileNotFoundException {
 	Entity ano = clazz.getAnnotation(Entity.class);
 	if (ano == null) {
-	    throw new MappingException(clazz.getName() + " is not mapped.");
+	    throw new TemplateException(clazz.getName() + " is not mapped.");
 	}
 	switch (ano.root()) {
 	case ABSOLUTE:
@@ -217,7 +216,7 @@ enum StamentPreparer {
 	case ENTITY_PATH:
 	    return clazz.getResourceAsStream(ano.path());
 	default:
-	    throw new MappingException("Cannot find root folder.");
+	    throw new TemplateException("Cannot find root folder.");
 	}
     }
 }
