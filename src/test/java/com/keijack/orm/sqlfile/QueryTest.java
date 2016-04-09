@@ -1,6 +1,7 @@
 package com.keijack.orm.sqlfile;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import java.beans.PropertyVetoException;
@@ -56,8 +57,8 @@ public class QueryTest {
 	    List<TestEntity> res = session.query(TestEntity.class, params);
 
 	    assertEquals(2, res.size());
-	    assertEquals(new Integer(1), res.get(0).getId());
-	    assertEquals("Hello", res.get(0).getName());
+	    assertNull(res.get(0).getId());
+	    assertEquals("Hello", res.get(0).getNAME());
 	    assertEquals("2015-02-28 11:05:40.10",
 		    DATE_FORMAT.format(res.get(0).getCreateTime()));
 	} catch (Throwable t) {
@@ -84,8 +85,8 @@ public class QueryTest {
 	    List<TestEntity> res = session.query(TestEntity.class, params, 1, 1);
 
 	    assertEquals(1, res.size());
-	    assertEquals(new Integer(2), res.get(0).getId());
-	    assertEquals("World", res.get(0).getName());
+	    assertNull(res.get(0).getId());
+	    assertEquals("World", res.get(0).getNAME());
 	    assertEquals("2015-02-28 11:05:40.61",
 		    DATE_FORMAT.format(res.get(0).getCreateTime()));
 	} catch (Throwable t) {

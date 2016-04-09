@@ -16,6 +16,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import com.keijack.orm.sqlfile.annotations.Column;
+import com.keijack.orm.sqlfile.annotations.Temporal;
 
 /**
  * 一个查询操作的会话，由于暂时只用在查询方面，所以未实现复杂的 transaction 机制。
@@ -120,10 +121,11 @@ public final class Session {
 		res.add(obj);
 	    }
 	    return res;
-	} catch (InstantiationException
-		| IllegalAccessException
-		| IllegalArgumentException
-		| InvocationTargetException e) {
+	} catch (
+		InstantiationException
+		    | IllegalAccessException
+		    | IllegalArgumentException
+		    | InvocationTargetException e) {
 	    throw new MappingException(e);
 	} catch (SQLException e) {
 	    throw new QueryException(e);
@@ -135,14 +137,17 @@ public final class Session {
 	Map<String, Method> lableSetMethodMap = new HashMap<>();
 	Field[] fields = clazz.getDeclaredFields();
 	for (Field field : fields) {
-	    Column ano = field.getAnnotation(Column.class);
-	    if (ano == null)
+	    Temporal tano = field.getAnnotation(Temporal.class);
+	    if (tano != null)
 		continue;
-	    String label = ano.label();
+
+	    String label;
 	    String fieldName = field.getName();
-	    if (label.isEmpty()) {
+	    Column ano = field.getAnnotation(Column.class);
+	    if (ano != null && !ano.label().isEmpty())
+		label = ano.label();
+	    else
 		label = fieldName;
-	    }
 
 	    String setMethodName = "set" + Character.toUpperCase(fieldName.charAt(0));
 	    if (fieldName.length() > 1) {

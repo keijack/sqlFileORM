@@ -4,15 +4,15 @@ import java.util.Date;
 
 import com.keijack.orm.sqlfile.annotations.Column;
 import com.keijack.orm.sqlfile.annotations.Entity;
+import com.keijack.orm.sqlfile.annotations.Temporal;
 
 @Entity(path = "test.sql")
 public class TestEntity {
 
-    @Column(label = "ID")
+    @Temporal
     private Integer id;
 
-    @Column(label = "NAME")
-    private String name;
+    private String NAME;
 
     @Column(label = "CT")
     private Date createTime;
@@ -25,12 +25,12 @@ public class TestEntity {
 	this.id = id;
     }
 
-    public String getName() {
-	return name;
+    public String getNAME() {
+	return NAME;
     }
 
-    public void setName(String name) {
-	this.name = name;
+    public void setNAME(String nAME) {
+	NAME = nAME;
     }
 
     public Date getCreateTime() {
