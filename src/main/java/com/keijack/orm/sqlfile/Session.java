@@ -115,7 +115,7 @@ public final class Session {
 		    Object value = result.getObject(i);
 		    if (lableSetMethodMap.containsKey(label) && value != null) {
 			Method method = lableSetMethodMap.get(label);
-			method.invoke(obj, value);
+			invokeMethod(method, obj, value);
 		    }
 		}
 		res.add(obj);
@@ -131,6 +131,28 @@ public final class Session {
 	    throw new QueryException(e);
 	}
 
+    }
+
+    private <T> void invokeMethod(Method method, T obj, Object value)
+	    throws IllegalAccessException, InvocationTargetException {
+	if (!Number.class.isInstance(value)) {
+	    method.invoke(obj, value);
+	    return;
+	}
+	Class<?> paramType = method.getParameterTypes()[0];
+	Number val = (Number) value;
+	if (Long.class.equals(paramType) || long.class.equals(paramType))
+	    method.invoke(obj, val.longValue());
+	else if (Integer.class.equals(paramType) || int.class.equals(paramType))
+	    method.invoke(obj, val.intValue());
+	else if (Short.class.equals(paramType) || short.class.equals(paramType))
+	    method.invoke(obj, val.shortValue());
+	else if (Byte.class.equals(paramType) || byte.class.equals(paramType))
+	    method.invoke(obj, val.byteValue());
+	else if (Double.class.equals(paramType) || double.class.equals(paramType))
+	    method.invoke(obj, val.doubleValue());
+	else if (Float.class.equals(paramType) || float.class.equals(paramType))
+	    method.invoke(obj, val.floatValue());
     }
 
     private <T> Map<String, Method> getAllMappedSetMethods(Class<T> clazz) {
