@@ -153,6 +153,8 @@ public final class Session {
 	    method.invoke(obj, val.doubleValue());
 	else if (Float.class.equals(paramType) || float.class.equals(paramType))
 	    method.invoke(obj, val.floatValue());
+	else
+	    method.invoke(obj, val);
     }
 
     private <T> Map<String, Method> getAllMappedSetMethods(Class<T> clazz) {
